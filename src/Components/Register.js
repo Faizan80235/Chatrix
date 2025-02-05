@@ -2,13 +2,12 @@ import React from 'react';
 import { Container, Form, Button } from 'react-bootstrap';
 import { Link } from 'react-router-dom';
 function Login() {
- 
 
   return (
     <div style={{ backgroundColor: '#003366', minHeight: '100vh' }}>
       <Container className="d-flex justify-content-center align-items-center" style={{ minHeight: '100vh' }}>
         <Form className="p-4" style={{ backgroundColor: '#003366', borderRadius: '8px', width: '100%', maxWidth: '400px' }}>
-          <h2 className="text-white text-center mb-4">Login</h2>
+          <h2 className="text-white text-center mb-4">Welcome To Chatrix</h2>
 
           <Form.Group className="mb-3">
             <Form.Label className="text-white">Email address</Form.Label>
@@ -50,7 +49,7 @@ function Login() {
           </Form.Group>
 
           <Button variant="primary" type="submit" className="w-100">
-            <Link to="/Chatrix" variant="primary" type="submit" className="w-100"style={{color
+            <Link to='/index/Chat/start/welcome/Chatrix' variant="primary" type="submit" className="w-100"style={{color
               :"white",textDecoration:"none"
             }} >
             Submit

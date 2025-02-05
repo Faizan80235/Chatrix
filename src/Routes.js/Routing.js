@@ -11,9 +11,9 @@ export default function Routing() {
 
         <BrowserRouter>
         <Routes>
-            <Route path='/Logout' element={<Register></Register>}></Route>
+            <Route path='/Logout' element={<Login></Login>}></Route>
             <Route path='/' element={<Register></Register>}></Route>
-            <Route path='/Chatrix' element={<ChatPage></ChatPage>}></Route>
+            <Route path='/index/Chat/start/welcome/Chatrix' element={<ChatPage></ChatPage>}></Route>
         </Routes>
         </BrowserRouter>
     </div>

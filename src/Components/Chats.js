@@ -19,15 +19,15 @@ export default function ChatPage() {
           <h2 className="text-lg font-bold">Chatrix</h2>
         </div>
         <div className="flex-1">
-          <a to="/profile">
+          <Link to="/profile" style={{textDecoration:"none"}}>
             <SidebarItem icon={faUser} text="Profile" />
-          </a>
+          </Link>
           <a to="/settings">
             <SidebarItem icon={faCog} text="Settings" />
           </a>
-          <a to="/logout">
-            <SidebarItem icon={faSignOutAlt} text="Logout" />
-          </a>
+          <Link to="/logout" style={{textDecoration:"none"}}>
+            <SidebarItem icon={faSignOutAlt}  text="Logout" />
+          </Link>
         </div>
       </div>
 
@@ -35,7 +35,7 @@ export default function ChatPage() {
       <div className="flex-1 flex flex-col">
         {/* Header */}
         <div className="p-4 bg-gray-800 border-b border-gray-700 flex items-center justify-between">
-          <h3 className="text-lg font-semibold">Sir Yasir</h3>
+          <h3 className="text-lg font-semibold">""</h3>
           <span className="text-sm text-gray-400">Online</span>
         </div>
 
@@ -48,7 +48,6 @@ export default function ChatPage() {
         {/* Input Box */}
         <div className="p-4 bg-gray-800 border-t border-gray-700 flex items-center">
           <button className="p-2 text-gray-400 hover:text-white">
-            <FontAwesomeIcon icon={faPaperclip} />
           </button>
           <input
             type="text"
