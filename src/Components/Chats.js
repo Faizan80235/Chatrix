@@ -3,53 +3,52 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faPaperPlane } from "@fortawesome/free-solid-svg-icons";
 import io from "socket.io-client";
 
-// ✅ Connect to backend socket
+//Connect to backend socket
 const socket = io("http://localhost:5000"); // Make sure backend is running
 
 export default function ChatPage() {
-  // logged Users
+  // logged-in User
   const user = JSON.parse(localStorage.getItem("user"));
 
   const [message, setMessage] = useState("");
-  const [users, setUsers] = useState("");
+  const [users, setUsers] = useState([]); //  Corrected: initialized as array
   const [chatMessages, setChatMessages] = useState([]);
   const [receiver, setReceiver] = useState(null);
 
-  // fetch all user if already logged you have chat it
-
+  //  Fetch all users except current user
   useEffect(() => {
     const fetchUsers = async () => {
       try {
         const res = await fetch(`http://127.0.0.1:5000/api/users/${user._id}`);
         const data = await res.json();
-        setUsers(data.data);
+        setUsers(data.data); // Make sure backend returns array
       } catch (error) {
-        console.error("failed to fetch user", error);
+        console.error("Failed to fetch users", error);
       }
     };
     fetchUsers();
-  }, []);
+  }, [user._id]);
 
-// fetch message to user
-  const handleSelectUser =async (selectedUser) => {
-    setUsers(selectedUser);
+  //  Fetch messages for selected user
+  const handleSelectUser = async (selectedUser) => {
+    setReceiver(selectedUser); //  Set receiver (corrected)
     try {
-      const response =await fetch(
+      const response = await fetch(
         `http://127.0.0.1:5000/api/messages/${user._id}/${selectedUser._id}`
       );
 
-      const data=response.json()
-      if(response.ok){
-        setChatMessages(data.data)
-      }else{
-        console.log("failed fetch message  to user",data.message);
+      const data = await response.json();
+      if (response.ok) {
+        setChatMessages(data.data);
+      } else {
+        console.log("Failed to fetch messages:", data.message);
       }
     } catch (error) {
       console.error("Error fetching messages:", error);
-      
     }
-  }
-  // ✅ Real-time message receiving
+  };
+
+  //  Real-time message receiving
   useEffect(() => {
     socket.on("receive_message", (data) => {
       console.log("Real-time message received:", data);
@@ -65,10 +64,7 @@ export default function ChatPage() {
       socket.off("receive_message");
     };
   }, [receiver, user._id]);
-
-  
-  
-  // ✅ Send message
+  //  Send message
   const handleSendMessage = async () => {
     if (!message.trim() || !receiver) return;
 
@@ -101,23 +97,27 @@ export default function ChatPage() {
 
   return (
     <div className="flex h-screen bg-gray-900 text-white">
-      {/* ✅ Users List (30% width) */}
+      {/*  Users List (30%) */}
       <div className="w-[30%] border-r border-gray-800 overflow-y-auto">
         <div className="p-4 bg-gray-800 font-semibold text-lg">Chats</div>
-        {users.map((u) => (
-          <div
-            key={u._id}
-            onClick={() => handleSelectUser(u)}
-            className={`p-4 cursor-pointer hover:bg-gray-700 flex items-center gap-2 ${
-              receiver?._id === u._id ? "bg-gray-700" : ""
-            }`}
-          >
-            <div>{u.name}</div>
-          </div>
-        ))}
+        {users.length > 0 ? (
+          users.map((u) => (
+            <div
+              key={u._id}
+              onClick={() => handleSelectUser(u)}
+              className={`p-4 cursor-pointer hover:bg-gray-700 flex items-center gap-2 ${
+                receiver?._id === u._id ? "bg-gray-700" : ""
+              }`}
+            >
+              <div>{u.name}</div>
+            </div>
+          ))
+        ) : (
+          <div className="p-4 text-gray-400">No users found</div>
+        )}
       </div>
 
-      {/* ✅ Chat Area (70% width) */}
+      {/*  Chat Area (70%) */}
       <div className="flex flex-col w-[70%]">
         {/* Header */}
         <div className="p-4 bg-gray-800 border-b border-gray-700 flex justify-between items-center">
@@ -161,7 +161,7 @@ export default function ChatPage() {
   );
 }
 
-// ✅ Chat Bubble Component
+//  Chat Bubble Component
 function ChatBubble({ message, sent }) {
   return (
     <div
