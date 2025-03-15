@@ -1,15 +1,18 @@
-import React from 'react'
-import ChatPage from './Components/Chats'
-import Routing from './Routes.js/Routing'
-// import Login from './Components/Login'
-// import Routing from './Routes.js/Routing'
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+import Register from './Components/Register';
+import Login from './Components/Login';
+import ChatPage from './Components/Chats';
 
-export default function App() {
+function App() {
   return (
-    <div>
-      <Routing></Routing>
-      {/* <ChatPage></ChatPage> */}
-{/* <Routing></Routing> */}
-    </div>
-  )
+    <BrowserRouter>
+      <Routes>
+        <Route path="/" element={<Register />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/chat" element={<ChatPage />} />
+      </Routes>
+    </BrowserRouter>
+  );
 }
+
+export default App;

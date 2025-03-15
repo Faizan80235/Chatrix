@@ -1,85 +1,177 @@
-import React from "react";
-import { Link } from "react-router-dom";
+import React, { useState, useEffect } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import {
-  faUser,
-  faCog,
-  faSignOutAlt,
-  faPaperPlane,
-  faPaperclip,
-} from "@fortawesome/free-solid-svg-icons";
+import { faPaperPlane } from "@fortawesome/free-solid-svg-icons";
+import io from "socket.io-client";
 
-// Chat Page Component
+// ✅ Connect to backend socket
+const socket = io("http://localhost:5000"); // Make sure backend is running
+
 export default function ChatPage() {
+  // logged Users
+  const user = JSON.parse(localStorage.getItem("user"));
+
+  const [message, setMessage] = useState("");
+  const [users, setUsers] = useState("");
+  const [chatMessages, setChatMessages] = useState([]);
+  const [receiver, setReceiver] = useState(null);
+
+  // fetch all user if already logged you have chat it
+
+  useEffect(() => {
+    const fetchUsers = async () => {
+      try {
+        const res = await fetch(`http://127.0.0.1:5000/api/users/${user._id}`);
+        const data = await res.json();
+        setUsers(data.data);
+      } catch (error) {
+        console.error("failed to fetch user", error);
+      }
+    };
+    fetchUsers();
+  }, []);
+
+// fetch message to user
+  const handleSelectUser =async (selectedUser) => {
+    setUsers(selectedUser);
+    try {
+      const response =await fetch(
+        `http://127.0.0.1:5000/api/messages/${user._id}/${selectedUser._id}`
+      );
+
+      const data=response.json()
+      if(response.ok){
+        setChatMessages(data.data)
+      }else{
+        console.log("failed fetch message  to user",data.message);
+      }
+    } catch (error) {
+      console.error("Error fetching messages:", error);
+      
+    }
+  }
+  // ✅ Real-time message receiving
+  useEffect(() => {
+    socket.on("receive_message", (data) => {
+      console.log("Real-time message received:", data);
+      if (
+        (data.sender_id === receiver?._id && data.receiver_id === user._id) ||
+        (data.sender_id === user._id && data.receiver_id === receiver?._id)
+      ) {
+        setChatMessages((prevMessages) => [...prevMessages, data]);
+      }
+    });
+
+    return () => {
+      socket.off("receive_message");
+    };
+  }, [receiver, user._id]);
+
+  
+  
+  // ✅ Send message
+  const handleSendMessage = async () => {
+    if (!message.trim() || !receiver) return;
+
+    const newMessage = {
+      sender_id: user._id,
+      receiver_id: receiver._id,
+      message: message,
+    };
+
+    try {
+      const response = await fetch("http://127.0.0.1:5000/api/messages", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(newMessage),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        setChatMessages([...chatMessages, data.data]);
+        socket.emit("send_message", data.data);
+        setMessage("");
+      } else {
+        console.error("Failed to send message:", data.message);
+      }
+    } catch (error) {
+      console.error("Error:", error);
+    }
+  };
+
   return (
     <div className="flex h-screen bg-gray-900 text-white">
-      {/* Sidebar */}
-      <div className="w-64 bg-gray-800 flex flex-col">
-        <div className="p-4 bg-gray-900 border-b border-gray-700 text-center">
-          <h2 className="text-lg font-bold">Chatrix</h2>
-        </div>
-        <div className="flex-1">
-          <Link to="/profile" style={{textDecoration:"none"}}>
-            <SidebarItem icon={faUser} text="Profile" />
-          </Link>
-          <a to="/settings">
-            <SidebarItem icon={faCog} text="Settings" />
-          </a>
-          <Link to="/logout" style={{textDecoration:"none"}}>
-            <SidebarItem icon={faSignOutAlt}  text="Logout" />
-          </Link>
-        </div>
+      {/* ✅ Users List (30% width) */}
+      <div className="w-[30%] border-r border-gray-800 overflow-y-auto">
+        <div className="p-4 bg-gray-800 font-semibold text-lg">Chats</div>
+        {users.map((u) => (
+          <div
+            key={u._id}
+            onClick={() => handleSelectUser(u)}
+            className={`p-4 cursor-pointer hover:bg-gray-700 flex items-center gap-2 ${
+              receiver?._id === u._id ? "bg-gray-700" : ""
+            }`}
+          >
+            <div>{u.name}</div>
+          </div>
+        ))}
       </div>
 
-      {/* Chat Section */}
-      <div className="flex-1 flex flex-col">
+      {/* ✅ Chat Area (70% width) */}
+      <div className="flex flex-col w-[70%]">
         {/* Header */}
-        <div className="p-4 bg-gray-800 border-b border-gray-700 flex items-center justify-between">
-          <h3 className="text-lg font-semibold">""</h3>
-          <span className="text-sm text-gray-400">Online</span>
+        <div className="p-4 bg-gray-800 border-b border-gray-700 flex justify-between items-center">
+          <h3 className="text-lg font-semibold">
+            {receiver ? receiver.name : "Select a user to chat"}
+          </h3>
         </div>
 
         {/* Chat Messages */}
-        <div className="flex-1 overflow-y-auto p-4 bg-gray-900">
-          <ChatMessage text="Ab is ko start kar dete hai" type="sent" />
-          <ChatMessage text="Maze ka project hai" type="received" />
+        <div className="flex-1 overflow-y-auto px-4 py-2 bg-[url('https://web.whatsapp.com/img/bg-chat-tile_a3f681fe9d8bc9c4c9f02a27bfc3c1eb.png')] bg-center bg-cover space-y-2">
+          {chatMessages.map((msg, index) => (
+            <ChatBubble
+              key={index}
+              message={msg.message}
+              sent={msg.sender_id === user._id}
+            />
+          ))}
         </div>
 
         {/* Input Box */}
-        <div className="p-4 bg-gray-800 border-t border-gray-700 flex items-center">
-          <button className="p-2 text-gray-400 hover:text-white">
-          </button>
-          <input
-            type="text"
-            placeholder="Type a message"
-            className="flex-1 bg-gray-700 p-2 mx-2 rounded-lg focus:outline-none"
-          />
-          <button className="p-2 text-gray-400 hover:text-white">
-            <FontAwesomeIcon icon={faPaperPlane} />
-          </button>
-        </div>
+        {receiver && (
+          <div className="p-2 bg-gray-800 flex items-center gap-2">
+            <input
+              type="text"
+              placeholder="Type a message"
+              className="flex-1 bg-gray-700 px-4 py-2 rounded-full focus:outline-none text-white"
+              value={message}
+              onChange={(e) => setMessage(e.target.value)}
+              onKeyPress={(e) => e.key === "Enter" && handleSendMessage()}
+            />
+            <button
+              onClick={handleSendMessage}
+              className="bg-green-600 p-3 rounded-full"
+            >
+              <FontAwesomeIcon icon={faPaperPlane} className="text-white" />
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );
 }
 
-// Sidebar Item Component
-function SidebarItem({ icon, text }) {
+// ✅ Chat Bubble Component
+function ChatBubble({ message, sent }) {
   return (
-    <div className="p-4 flex items-center space-x-3 hover:bg-gray-700 cursor-pointer">
-      <FontAwesomeIcon icon={icon} className="text-gray-400" />
-      <span className="text-white">{text}</span>
-    </div>
-  );
-}
-
-// Chat Message Component
-function ChatMessage({ text, type }) {
-  const messageStyle =
-    type === "sent" ? "bg-blue-600 self-end" : "bg-gray-700 self-start";
-  return (
-    <div className={`p-3 rounded-lg mb-2 max-w-sm ${messageStyle}`}>
-      {text}
+    <div
+      className={`max-w-[75%] p-2 px-4 rounded-xl text-sm ${
+        sent
+          ? "bg-green-600 text-white ml-auto"
+          : "bg-gray-700 text-white mr-auto"
+      }`}
+    >
+      {message}
     </div>
   );
 }
