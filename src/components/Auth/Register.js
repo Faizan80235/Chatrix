@@ -27,7 +27,6 @@ const Register = () => {
       [name]: value
     }));
     
-    // Clear error when user starts typing
     if (errors[name]) {
       setErrors(prev => ({
         ...prev,
@@ -100,7 +99,7 @@ const Register = () => {
     <div className="auth-container">
       <Container>
         <Row className="justify-content-center">
-          <Col md={6} lg={5}>
+          <Col xs={12} md={6} lg={5}>
             <Card className="auth-card shadow-lg">
               <div className="auth-header">
                 <UserPlus size={48} className="mb-3" />
