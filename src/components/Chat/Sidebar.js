@@ -1,13 +1,17 @@
-import React from 'react';
-import { Button } from 'react-bootstrap';
-import { LogOut, MessageCircle, Users } from 'lucide-react';
+import React, { useState } from 'react';
+import { Button, InputGroup, FormControl, Spinner } from 'react-bootstrap';
+import { LogOut, MessageCircle, Users, Search } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useSocket } from '../context/SocketContext';
 import UserItem from './UserItem';
+import axios from 'axios';
 
 const Sidebar = ({ users, selectedUser, onUserSelect, currentUser }) => {
   const { logout } = useAuth();
   const { onlineUsers } = useSocket();
+  const [searchTerm, setSearchTerm] = useState('');
+  const [searchedUser, setSearchedUser] = useState(null);
+  const [loadingSearch, setLoadingSearch] = useState(false);
 
   const handleLogout = async () => {
     await logout();
@@ -28,6 +32,32 @@ const Sidebar = ({ users, selectedUser, onUserSelect, currentUser }) => {
       (user.email === users.find(u => u._id === userId)?.email)
     );
   };
+
+  // Search user by email from server
+  const handleSearch = async (e) => {
+    const value = e.target.value;
+    setSearchTerm(value);
+    setSearchedUser(null);
+
+    if (!value) return;
+
+    try {
+      setLoadingSearch(true);
+      const res = await axios.get(`/api/auth/search?email=${value}`);
+      if (res.data && res.data.user) {
+        setSearchedUser(res.data.user);
+      }
+    } catch (error) {
+      console.error('User search failed:', error);
+    } finally {
+      setLoadingSearch(false);
+    }
+  };
+
+  // Filtered users from local list
+  const filteredUsers = users.filter(user =>
+    user.email.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   return (
     <div className="chat-sidebar d-flex flex-column text-dark">
@@ -61,15 +91,47 @@ const Sidebar = ({ users, selectedUser, onUserSelect, currentUser }) => {
         </div>
       </div>
 
+      {/* 🔍 Search Bar */}
+      <div className="p-2 border-bottom border-secondary">
+        <InputGroup size="sm">
+          <InputGroup.Text className="bg-light">
+            <Search size={14} />
+          </InputGroup.Text>
+          <FormControl
+            placeholder="Search by email..."
+            value={searchTerm}
+            onChange={handleSearch}
+          />
+        </InputGroup>
+      </div>
+
       {/* Users List */}
       <div className="users-list flex-grow-1 overflow-auto">
-        {users.length === 0 ? (
+        {loadingSearch && (
+          <div className="text-center text-muted p-3">
+            <Spinner animation="border" size="sm" /> Searching...
+          </div>
+        )}
+
+        {/* If searched user found but not in chat list */}
+        {searchedUser && !users.find(u => u._id === searchedUser._id) && (
+          <UserItem
+            user={searchedUser}
+            isSelected={false}
+            isOnline={isUserOnline(searchedUser._id)}
+            onClick={() => onUserSelect(searchedUser)}
+            getUserInitials={getUserInitials}
+          />
+        )}
+
+        {/* Show filtered chat users */}
+        {filteredUsers.length === 0 && !searchedUser ? (
           <div className="text-center text-muted p-4">
             <Users size={48} className="mb-3 opacity-50 text-dark" />
-            <p>No users available</p>
+            <p>{searchTerm ? 'No user found' : 'No users available'}</p>
           </div>
         ) : (
-          users.map(user => (
+          filteredUsers.map(user => (
             <UserItem
               key={user._id}
               user={user}
